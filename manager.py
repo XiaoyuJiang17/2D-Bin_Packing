@@ -1,5 +1,6 @@
 
 import math
+import json
 
 from data_type import Big, Small, DataBox
 import file_util as fu
@@ -14,28 +15,17 @@ packingResults = [] # 存储结果
 def readData():
     global dataBox
     dataBox = DataBox()
-    lines = fu.readLines(c.dataFile)
-    smallIndex = 0
-    for line in lines:
-        if line.startswith('big'):
-            parts = line.split(' ')
-            big = Big()
-            big.width = int(parts[1])
-            big.height = int(parts[2])
-            dataBox.bin = big
-        elif line.startswith('s'):
-            parts = line.split(' ')
-            small = Small(int(parts[1]), int(parts[2]), big)
-            index = int(parts[0][1:])
-            if len(dataBox.datas) > index:
-                dataBox.datas[index].append(small)
-                smallIndex += 1
-            else:
-                dataBox.datas.append([small])
-                smallIndex = 0
-            small.num = smallIndex
+    data_file_content = fu.readFile(c.dataFile)
+    box_data = json.loads(data_file_content)
+    dataBox.bin = Big(box_data['big']['width'], box_data['big']['height'])
+    for box_group in box_data['small_boxes']:
+        new_group = []
+        for box in box_group:
+            small = Small(box['width'], box['height'], dataBox.bin)
+            new_group.append(small)
+            small.num = len(new_group)
+        dataBox.datas.append(new_group)
     return dataBox
-
 
 # 总的装箱处理程序入口
 def start():

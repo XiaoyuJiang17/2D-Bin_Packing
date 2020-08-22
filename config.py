@@ -1,7 +1,7 @@
 # 窗口标题
 winTitle = 'bin packing'
 # 窗口宽度
-winWidth = 700
+winWidth = 800
 # 窗口高度
 winHeight = 600
 

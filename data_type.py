@@ -266,4 +266,4 @@ class Small(Big):
 
 class DataBox():
     bin = None   # 大矩形
-    datas = []   # 数据组
+    datas = []   # 数据组, 放了10组 Small() 的数据列表， 每组 50 个
