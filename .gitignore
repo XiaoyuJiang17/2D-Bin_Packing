@@ -1,0 +1,16 @@
+.history
+*.pyc
+*~
+/.vscode
+__pycache__
+myvenv
+db.sqlite3
+/static
+.DS_Store
+
+*.exe
+geckodriver.log
+jangov1/
+cpfiles.bat
+aa.pyc
+*.pdf
