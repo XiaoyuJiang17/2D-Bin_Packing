@@ -3,6 +3,8 @@ from tkinter import ttk
 import tkinter
 # from PIL import Image, ImageTk
 # import PIL
+import threading
+import time
 
 from base_win import BaseWin
 from gui_util import *
@@ -13,6 +15,7 @@ import manager
 class AppWin(BaseWin):
     def __init__(self):
         super().__init__(c.winTitle, c.winWidth, c.winHeight)
+        self.boxThread = None
 
         manager.readData()
         self.initFrame()
@@ -38,6 +41,10 @@ class AppWin(BaseWin):
             i += 1
             btn = Button(p, text='第' + str(i) + '组', command=self.processGroup(i-1))
             self.grid(p, btn)
+
+        if c.debug:
+            nextBtn = Button(p, text='下一步', command=self.nextStep)
+            self.grid(p, nextBtn)
         
         self.top3 = ttk.Frame(self.main, padding = '3 3 3 3')
         self.top3.grid(column=0, row=2, sticky=(N, W, E, S))
@@ -57,6 +64,9 @@ class AppWin(BaseWin):
         dataL04 = Label(self.top3, text='个')
         self.grid(self.top3, dataL04)
 
+    def nextStep(self):
+        self.drawBins(manager.maxBins)
+        manager.running = True
 
     # 显示并处理指定组的数据
     def processGroup(self, index):
@@ -70,15 +80,34 @@ class AppWin(BaseWin):
             # 显示一组数据内容
             for box in boxes:
                 newRow = i % 10 == 0
-                text = str(i) + ':(' + str(box.width) + ',' + str(box.height) + ')'
+                text = str(i+1) + ':(' + str(box.width) + ',' + str(box.height) + ')'
                 label = Label(p, text=text)
                 self.grid(p, label, nextRow=newRow)
                 i += 1
 
             result = manager.packingGroup(manager.dataBox.bin, boxes)
-            self.boxNumL['text'] = str(len(result))
-            self.drawBins(result)
-        return innerFun
+            if not c.debug:
+                self.boxNumL['text'] = str(len(result))
+                self.drawBins(result)
+
+        def threadFun():
+            manager.running = True
+            print("ttt", 1)
+            if self.boxThread != None:
+                print("ttt", 2)
+                manager.debug = False
+                self.boxThread.join()
+                print("ttt", 3)
+            print("ttt", 4)
+            boxThread = threading.Thread(target=innerFun)
+            boxThread.setDaemon(True)
+            print("ttt", 5)
+            self.boxThread = boxThread
+            manager.debug = c.debug
+            print("ttt", 6)
+            boxThread.start()
+            print("ttt", 7)
+        return threadFun
 
         
 
@@ -107,6 +136,10 @@ class AppWin(BaseWin):
         cv.pack(side=LEFT, expand=YES, fill=BOTH)       # canv clipped first
 
         # self.drawBins(manager.packingResults[0])
+        def processWheel(event):
+            a = int(-(event.delta)/60)
+            cv.yview_scroll(a, 'units')
+        cv.bind('<MouseWheel>', processWheel)
 
     # 画出矩形状态
     def drawBins(self, boxes):
@@ -121,6 +154,7 @@ class AppWin(BaseWin):
 
         for box in boxes:
             box.draw(self.canvas)
+            # break
 
 
         

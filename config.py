@@ -7,5 +7,5 @@ winHeight = 600
 
 dataFile = 'data.txt'
 
-
+debug = False
 

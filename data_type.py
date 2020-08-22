@@ -10,7 +10,7 @@ import box_helper as helper
 
 # 大矩形
 class Big():
-    pos = (0,0)  # 位置
+    pos = (0,0)  # 位置， 记录自己在父亲中的相对位置
     width = 0   # 宽度
     height = 0  # 高度
     children = [] # 包含的小矩形
@@ -29,12 +29,9 @@ class Big():
 
     def __init__(self, w=0, h=0):
         self.children = []
-        self.width = w
-        self.height = h
+        self.setSize(w, h)
         self.bottomWidth = w
         self.num = 0
-        self.w = w 
-        self.h = h 
 
         self.levelWidth = 0
         self.currLevel = 0
@@ -45,6 +42,12 @@ class Big():
     def __str__(self):
         return 'c:%d p:%d %d w:%d h:%d' % (len(self.children), self.pos[0], self.pos[1], self.width, self.height)
 
+    # width 与 w  已经混用，不能分离了。。。
+    def setSize(self, w, h):
+        self.width = w
+        self.height = h
+        self.w = w
+        self.h = h
     # 底层加入一个物品
     def bottomPack(self, small):
         small.pos = (self.width - self.bottomWidth, 0)
@@ -216,6 +219,9 @@ class Big():
 
         return result
 
+    def getDrawPos(self):
+        return self.pos
+
 
 
 # 小矩形
@@ -228,15 +234,30 @@ class Small(Big):
     def __init__(self, w=0, h=0, big=None):
         super().__init__(w, h)
         self.big = big
-        value = self.calculateValue()
+        self.calculateValue()
 
     # 计算物品价值
     def calculateValue(self):
+        if len(self.children) > 0:
+            self.calculateSingleValue()
+            # print('for one:', self.value)
+            self.value = 0
+            for child in self.children:
+                self.value += child.calculateValue()
+            # print('for mulit:', self.value)
+            
+        else:
+            self.calculateSingleValue()
+        return self.value
+    # 按本身的宽高计算价值
+    def calculateSingleValue(self):
+        # print('single:', self.value)
         w = self.width
         h = self.height
         rou = self.calculateRou()
         value = rou * math.pow(w * h, 1.2) * h / w
         self.value = value
+        return value
 
     # 计算物品的 ρ 值
     def calculateRou(self):
@@ -255,14 +276,45 @@ class Small(Big):
         return 'i:%d p:%d %d w:%d h:%d' % (self.num, self.pos[0], self.pos[1], self.width, self.height)
 
     def draw(self, canvas):
+        if len(self.children) == 0:
+            self.drawSelf(canvas)
+        else:
+            # print("==============multi box pos ", self.pos)
+            for child in self.children:
+                child.draw(canvas)
+
+    def drawSelf(self, canvas):
+        # print('pPos', self.parent.pos)
         # print('pos', self.pos)
-        pPos = self.parent.pos
-        x = pPos[0] + self.pos[0] 
-        y = pPos[1] - self.pos[1] 
+        # pPos = self.parent.pos
+        drawPos = self.getDrawPos()
+        # x = pPos[0] + self.pos[0] 
+        # y = pPos[1] - self.pos[1] 
+        x = drawPos[0]
+        y = drawPos[1]
 
         color = '#' + ''.join(random.sample('0123456789', 6))
         canvas.create_rectangle(x, y, x+self.w, y-self.h, fill=color)
-        canvas.create_text(x + 10, y - 10, text=str(self.num))
+        # canvas.create_text(x + 10, y - 10, text=str(self.num))
+        canvas.create_text(x + 20, y - 10, text=str(self.num) + " " + str(self.w))
+        # print('draw', x, y, x+self.w, y-self.h)
+
+    # 同宽的小盒子合并添加
+    def addSub(self, box):
+        box.parent = self
+        box_y = 0
+        for child in self.children:
+            box_y += child.height
+        box.pos = (0, box_y)
+        # append 要放在计算 pos的后面， 要不连自己的高度也加进去了
+        self.children.append(box) 
+        self.setSize(box.width, self.height + box.height)
+        self.calculateValue()
+
+    def getDrawPos(self):
+        pPos = self.parent.getDrawPos()
+        return (self.pos[0] + pPos[0], pPos[1] - self.pos[1])
+
 
 class DataBox():
     bin = None   # 大矩形
